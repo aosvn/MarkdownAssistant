@@ -3,6 +3,7 @@ import { open, save, confirm, message } from '@tauri-apps/api/dialog';
 import { readTextFile, writeTextFile, writeBinaryFile } from '@tauri-apps/api/fs';
 import { appWindow } from '@tauri-apps/api/window';
 import html2pdf from 'html2pdf.js';
+import { jsPDF } from 'jspdf';
 
 let vditor;
 let currentFilePath = null;
@@ -285,6 +286,311 @@ function closePdfModal() {
   document.getElementById('overlay').classList.add('hidden');
 }
 
+function getCleanPreviewHTML() {
+  let previewHTML = '';
+  const previewContent = document.querySelector('.vditor-preview__content');
+  if (previewContent) {
+    previewHTML = previewContent.innerHTML;
+  } else {
+    const preview = document.querySelector('.vditor-preview');
+    if (preview) {
+      const innerContent = preview.querySelector('.vditor-reset, .vditor-preview__content');
+      if (innerContent) {
+        previewHTML = innerContent.innerHTML;
+      } else {
+        previewHTML = preview.innerHTML;
+      }
+    }
+  }
+  
+  if (!previewHTML) {
+    return null;
+  }
+  
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = previewHTML;
+  
+  tempDiv.querySelectorAll('.vditor-code, .vditor-ir__preview, .vditor-reset').forEach(el => {
+    el.classList.remove('vditor-code', 'vditor-ir__preview', 'vditor-reset');
+  });
+  
+  tempDiv.querySelectorAll('[class*="vditor-"]').forEach(el => {
+    const classesToRemove = Array.from(el.classList).filter(c => c.startsWith('vditor-'));
+    el.classList.remove(...classesToRemove);
+  });
+  
+  tempDiv.querySelectorAll('pre').forEach(pre => {
+    const codeElement = pre.querySelector('code');
+    if (codeElement) {
+      const codeContent = codeElement.textContent;
+      const languageClass = Array.from(codeElement.classList).find(c => c.startsWith('language-'));
+      pre.innerHTML = '';
+      const newCode = document.createElement('code');
+      if (languageClass) {
+        newCode.className = languageClass;
+      }
+      newCode.textContent = codeContent;
+      pre.appendChild(newCode);
+    }
+  });
+  
+  return tempDiv.innerHTML;
+}
+
+function getPdfStyles() {
+  return `
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      padding: 20px;
+      max-width: 800px;
+      margin: 0 auto;
+      line-height: 1.6;
+      color: #24292e;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.5em;
+      margin-bottom: 0.5em;
+      font-weight: 600;
+      color: #24292e;
+    }
+    h1 { font-size: 2em; }
+    h2 { font-size: 1.5em; }
+    h3 { font-size: 1.25em; }
+    p { margin: 1em 0; }
+    code {
+      background-color: #f6f8fa;
+      padding: 0.2em 0.4em;
+      border-radius: 3px;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      font-size: 0.9em;
+    }
+    pre {
+      background-color: #f6f8fa;
+      padding: 16px;
+      border-radius: 6px;
+      overflow-x: auto;
+      margin: 1em 0;
+    }
+    pre code {
+      background-color: transparent;
+      padding: 0;
+      display: block;
+      white-space: pre;
+    }
+    blockquote {
+      border-left: 4px solid #dfe2e5;
+      padding-left: 16px;
+      margin-left: 0;
+      color: #6a737d;
+    }
+    ul, ol {
+      padding-left: 2em;
+      margin: 1em 0;
+    }
+    li { margin: 0.5em 0; }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 1em 0;
+    }
+    th, td {
+      border: 1px solid #dfe2e5;
+      padding: 8px 12px;
+      text-align: left;
+    }
+    th { background-color: #f6f8fa; }
+    img { max-width: 100%; height: auto; }
+    a { color: #0366d6; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    hr {
+      border: none;
+      border-top: 1px solid #dfe2e5;
+      margin: 2em 0;
+    }
+  `;
+}
+
+function getMarginValue(margin) {
+  const margins = {
+    default: [15, 15, 15, 15],
+    none: [0, 0, 0, 0],
+    minimum: [5, 5, 5, 5]
+  };
+  return margins[margin] || margins.default;
+}
+
+async function exportViaBrowser(pageSize, orientation, margin) {
+  const previewHTML = getCleanPreviewHTML();
+  if (!previewHTML) {
+    message('无法获取预览内容，请尝试切换到分屏或预览模式', { type: 'error' });
+    return;
+  }
+
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    message('无法打开打印窗口，请允许弹出窗口', { type: 'error' });
+    return;
+  }
+
+  const printContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <title>Markdown Document</title>
+      <style>
+        ${getPdfStyles()}
+        @page {
+          size: ${pageSize} ${orientation};
+          margin: ${margin === 'none' ? '0' : margin === 'minimum' ? '5mm' : '15mm'};
+        }
+      </style>
+    </head>
+    <body>
+      ${previewHTML}
+    </body>
+    </html>
+  `;
+
+  printWindow.document.write(printContent);
+  printWindow.document.close();
+
+  setTimeout(function() {
+    printWindow.focus();
+    printWindow.print();
+  }, 300);
+
+  message('打印窗口已打开，请选择"保存为PDF"', { type: 'info' });
+}
+
+async function exportViaHtml2Pdf(pageSize, orientation, margin) {
+  const previewHTML = getCleanPreviewHTML();
+  if (!previewHTML) {
+    message('无法获取预览内容，请尝试切换到分屏或预览模式', { type: 'error' });
+    return;
+  }
+
+  const element = document.createElement('div');
+  element.innerHTML = previewHTML;
+  element.style.cssText = getPdfStyles();
+  document.body.appendChild(element);
+
+  const marginValue = getMarginValue(margin);
+  const opt = {
+    margin: marginValue,
+    filename: 'document.pdf',
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { unit: 'mm', format: pageSize, orientation: orientation }
+  };
+
+  try {
+    message('正在导出PDF...', { type: 'info' });
+    await html2pdf().set(opt).from(element).save();
+    message('PDF导出成功', { type: 'success' });
+  } catch (error) {
+    console.error('Error exporting PDF via html2pdf:', error);
+    message('导出PDF失败: ' + error.message, { type: 'error' });
+  } finally {
+    document.body.removeChild(element);
+  }
+}
+
+async function exportViaJsPdf(pageSize, orientation, margin) {
+  const content = vditor.getValue();
+  if (!content.trim()) {
+    message('文档内容为空，无法导出', { type: 'warning' });
+    return;
+  }
+
+  try {
+    message('正在导出PDF...', { type: 'info' });
+    
+    const doc = new jsPDF({
+      orientation: orientation,
+      unit: 'mm',
+      format: pageSize
+    });
+
+    const marginValue = getMarginValue(margin);
+    const leftMargin = marginValue[0];
+    const topMargin = marginValue[1];
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const maxWidth = pageWidth - leftMargin - marginValue[2];
+    
+    let yPosition = topMargin;
+    const lineHeight = 6;
+    
+    const lines = content.split('\n');
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      
+      if (yPosition > pageHeight - marginValue[3] - lineHeight) {
+        doc.addPage();
+        yPosition = topMargin;
+      }
+      
+      if (line.startsWith('# ')) {
+        doc.setFontSize(20);
+        doc.setFont('helvetica', 'bold');
+        doc.text(line.substring(2), leftMargin, yPosition);
+        yPosition += lineHeight * 1.5;
+      } else if (line.startsWith('## ')) {
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.text(line.substring(3), leftMargin, yPosition);
+        yPosition += lineHeight * 1.3;
+      } else if (line.startsWith('### ')) {
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text(line.substring(4), leftMargin, yPosition);
+        yPosition += lineHeight * 1.2;
+      } else if (line.startsWith('> ')) {
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'italic');
+        doc.setTextColor(100, 100, 100);
+        doc.text(line.substring(2), leftMargin + 5, yPosition);
+        doc.setTextColor(0, 0, 0);
+        yPosition += lineHeight;
+      } else if (line.startsWith('```')) {
+        doc.setFontSize(10);
+        doc.setFont('courier', 'normal');
+        doc.setFillColor(246, 248, 250);
+        doc.roundedRect(leftMargin, yPosition - 3, maxWidth, lineHeight * 2, 2, 2, 'F');
+        i++;
+        let codeContent = '';
+        while (i < lines.length && !lines[i].startsWith('```')) {
+          codeContent += lines[i] + '\n';
+          i++;
+        }
+        doc.text(codeContent.trim(), leftMargin + 2, yPosition + 3);
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(12);
+        yPosition += lineHeight * (codeContent.split('\n').length + 1);
+      } else if (line.trim() === '') {
+        yPosition += lineHeight * 0.5;
+      } else {
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'normal');
+        const wrappedText = doc.splitTextToSize(line, maxWidth);
+        doc.text(wrappedText, leftMargin, yPosition);
+        yPosition += lineHeight * wrappedText.length;
+      }
+    }
+
+    doc.save('document.pdf');
+    message('PDF导出成功', { type: 'success' });
+  } catch (error) {
+    console.error('Error exporting PDF via jsPDF:', error);
+    message('导出PDF失败: ' + error.message, { type: 'error' });
+  }
+}
+
 async function exportToPdf() {
   try {
     const content = vditor.getValue();
@@ -295,157 +601,24 @@ async function exportToPdf() {
     
     closePdfModal();
     
-    let previewHTML = '';
-    const previewContent = document.querySelector('.vditor-preview__content');
-    if (previewContent) {
-      previewHTML = previewContent.innerHTML;
-    } else {
-      const preview = document.querySelector('.vditor-preview');
-      if (preview) {
-        const innerContent = preview.querySelector('.vditor-reset, .vditor-preview__content');
-        if (innerContent) {
-          previewHTML = innerContent.innerHTML;
-        } else {
-          previewHTML = preview.innerHTML;
-        }
-      }
+    const method = document.getElementById('pdfMethod').value;
+    const pageSize = document.getElementById('pdfPageSize').value;
+    const orientation = document.getElementById('pdfOrientation').value;
+    const margin = document.getElementById('pdfMargin').value;
+    
+    switch (method) {
+      case 'browser':
+        await exportViaBrowser(pageSize, orientation, margin);
+        break;
+      case 'html2pdf':
+        await exportViaHtml2Pdf(pageSize, orientation, margin);
+        break;
+      case 'jspdf':
+        await exportViaJsPdf(pageSize, orientation, margin);
+        break;
+      default:
+        await exportViaBrowser(pageSize, orientation, margin);
     }
-    
-    if (!previewHTML) {
-      message('无法获取预览内容，请尝试切换到分屏或预览模式', { type: 'error' });
-      return;
-    }
-    
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = previewHTML;
-    
-    tempDiv.querySelectorAll('.vditor-code, .vditor-ir__preview, .vditor-reset').forEach(el => {
-      el.classList.remove('vditor-code', 'vditor-ir__preview', 'vditor-reset');
-    });
-    
-    tempDiv.querySelectorAll('[class*="vditor-"]').forEach(el => {
-      const classesToRemove = Array.from(el.classList).filter(c => c.startsWith('vditor-'));
-      el.classList.remove(...classesToRemove);
-    });
-    
-    tempDiv.querySelectorAll('pre').forEach(pre => {
-      const codeElement = pre.querySelector('code');
-      if (codeElement) {
-        const codeContent = codeElement.textContent;
-        const languageClass = Array.from(codeElement.classList).find(c => c.startsWith('language-'));
-        pre.innerHTML = '';
-        const newCode = document.createElement('code');
-        if (languageClass) {
-          newCode.className = languageClass;
-        }
-        newCode.textContent = codeContent;
-        pre.appendChild(newCode);
-      }
-    });
-    
-    previewHTML = tempDiv.innerHTML;
-    
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      message('无法打开打印窗口，请允许弹出窗口', { type: 'error' });
-      return;
-    }
-    
-    const printContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="UTF-8">
-        <title>Markdown Document</title>
-        <style>
-          * {
-            box-sizing: border-box;
-          }
-          body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            padding: 20px;
-            max-width: 800px;
-            margin: 0 auto;
-            line-height: 1.6;
-            color: #24292e;
-          }
-          h1, h2, h3, h4, h5, h6 {
-            margin-top: 1.5em;
-            margin-bottom: 0.5em;
-            font-weight: 600;
-            color: #24292e;
-          }
-          h1 { font-size: 2em; }
-          h2 { font-size: 1.5em; }
-          h3 { font-size: 1.25em; }
-          p { margin: 1em 0; }
-          code {
-            background-color: #f6f8fa;
-            padding: 0.2em 0.4em;
-            border-radius: 3px;
-            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-            font-size: 0.9em;
-          }
-          pre {
-            background-color: #f6f8fa;
-            padding: 16px;
-            border-radius: 6px;
-            overflow-x: auto;
-            margin: 1em 0;
-          }
-          pre code {
-            background-color: transparent;
-            padding: 0;
-            display: block;
-            white-space: pre;
-          }
-          blockquote {
-            border-left: 4px solid #dfe2e5;
-            padding-left: 16px;
-            margin-left: 0;
-            color: #6a737d;
-          }
-          ul, ol {
-            padding-left: 2em;
-            margin: 1em 0;
-          }
-          li { margin: 0.5em 0; }
-          table {
-            border-collapse: collapse;
-            width: 100%;
-            margin: 1em 0;
-          }
-          th, td {
-            border: 1px solid #dfe2e5;
-            padding: 8px 12px;
-            text-align: left;
-          }
-          th { background-color: #f6f8fa; }
-          img { max-width: 100%; height: auto; }
-          a { color: #0366d6; text-decoration: none; }
-          a:hover { text-decoration: underline; }
-          hr {
-            border: none;
-            border-top: 1px solid #dfe2e5;
-            margin: 2em 0;
-          }
-        </style>
-      </head>
-      <body>
-        ${previewHTML}
-      </body>
-      </html>
-    `;
-    
-    printWindow.document.write(printContent);
-    printWindow.document.close();
-    
-    setTimeout(function() {
-      printWindow.focus();
-      printWindow.print();
-    }, 300);
-    
-    message('打印窗口已打开，请选择"保存为PDF"', { type: 'info' });
     
   } catch (error) {
     console.error('Error exporting PDF:', error);
