@@ -199,6 +199,9 @@ export function initVditor(mode = 'sv', initialContent = '') {
   const vditorTheme = currentTheme === 'dark' ? 'dark' : 'light'
   const locale = getLocale()
   
+  // 转换语言格式：zh-CN -> zh_CN
+  const vditorLang = locale.replace('-', '_')
+  
   let currentContent = initialContent
   if (vditor) {
     try {
@@ -232,7 +235,8 @@ export function initVditor(mode = 'sv', initialContent = '') {
       enable: true,
       type: 'lines',
     },
-    i18n: vditorI18n[locale] || vditorI18n['zh-CN'],
+    lang: vditorLang,
+    cdn: './node_modules/vditor',
     preview: {
       theme: {
         current: vditorTheme,
