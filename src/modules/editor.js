@@ -291,7 +291,14 @@ export function initVditor(mode = 'sv', initialContent = '') {
     after: () => {
       console.log('Vditor initialized with mode:', mode)
       updateModeButtons(mode)
-      vditor.setValue(currentContent)
+      // 使用setTimeout确保Vditor完全初始化后再设置内容
+      setTimeout(() => {
+        try {
+          vditor.setValue(currentContent)
+        } catch (e) {
+          console.error('Error setting Vditor content:', e)
+        }
+      }, 100)
     },
     input: () => {
     },
