@@ -1,6 +1,10 @@
 import { HISTORY_KEY, MAX_HISTORY } from '../utils/constants.js'
 import { formatTime, getFileNameFromPath } from '../utils/helpers.js'
 
+/**
+ * 获取文件历史记录
+ * @returns {import('../utils/constants.js').FileHistoryItem[]} 历史记录数组
+ */
 export function getFileHistory() {
   try {
     const history = localStorage.getItem(HISTORY_KEY)
@@ -11,6 +15,10 @@ export function getFileHistory() {
   }
 }
 
+/**
+ * 保存文件历史记录
+ * @param {import('../utils/constants.js').FileHistoryItem[]} history - 历史记录数组
+ */
 export function saveFileHistory(history) {
   try {
     localStorage.setItem(HISTORY_KEY, JSON.stringify(history))
@@ -19,6 +27,10 @@ export function saveFileHistory(history) {
   }
 }
 
+/**
+ * 添加文件到历史记录
+ * @param {string} filePath - 文件路径
+ */
 export function addToHistory(filePath) {
   if (!filePath) return
   
@@ -40,16 +52,27 @@ export function addToHistory(filePath) {
   saveFileHistory(history)
 }
 
+/**
+ * 从历史记录中移除文件
+ * @param {string} filePath - 文件路径
+ */
 export function removeFromHistory(filePath) {
   let history = getFileHistory()
   history = history.filter(item => item.path !== filePath)
   saveFileHistory(history)
 }
 
+/**
+ * 清除所有历史记录
+ */
 export function clearAllHistory() {
   saveFileHistory([])
 }
 
+/**
+ * 渲染历史记录列表
+ * @param {HTMLElement} container - 容器元素
+ */
 export function renderHistoryList(container) {
   const history = getFileHistory()
   

@@ -1,3 +1,8 @@
+/**
+ * 格式化时间戳为相对时间字符串
+ * @param {number} timestamp - 时间戳
+ * @returns {string} 格式化后的时间字符串
+ */
 export function formatTime(timestamp) {
   const date = new Date(timestamp)
   const now = new Date()
@@ -22,6 +27,11 @@ export function formatTime(timestamp) {
   }
 }
 
+/**
+ * 从文件路径中提取文件名
+ * @param {string} filePath - 文件路径
+ * @returns {string} 文件名
+ */
 export function getFileNameFromPath(filePath) {
   if (!filePath) return ''
   const pathParts = filePath.split(/[/\\]/)
