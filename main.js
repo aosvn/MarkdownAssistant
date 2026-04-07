@@ -295,10 +295,24 @@ async function exportToPdf() {
     
     closePdfModal();
     
-    const previewElement = document.querySelector('.vditor-preview, .vditor-content, .vditor');
+    let previewHTML = '';
+    const previewContent = document.querySelector('.vditor-preview__content');
+    if (previewContent) {
+      previewHTML = previewContent.innerHTML;
+    } else {
+      const preview = document.querySelector('.vditor-preview');
+      if (preview) {
+        const innerContent = preview.querySelector('.vditor-reset, .vditor-preview__content');
+        if (innerContent) {
+          previewHTML = innerContent.innerHTML;
+        } else {
+          previewHTML = preview.innerHTML;
+        }
+      }
+    }
     
-    if (!previewElement) {
-      message('无法获取预览内容，请尝试切换到预览模式', { type: 'error' });
+    if (!previewHTML) {
+      message('无法获取预览内容，请尝试切换到分屏或预览模式', { type: 'error' });
       return;
     }
     
@@ -315,17 +329,22 @@ async function exportToPdf() {
         <meta charset="UTF-8">
         <title>Markdown Document</title>
         <style>
+          * {
+            box-sizing: border-box;
+          }
           body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
             padding: 20px;
             max-width: 800px;
             margin: 0 auto;
             line-height: 1.6;
+            color: #24292e;
           }
           h1, h2, h3, h4, h5, h6 {
             margin-top: 1.5em;
             margin-bottom: 0.5em;
             font-weight: 600;
+            color: #24292e;
           }
           h1 { font-size: 2em; }
           h2 { font-size: 1.5em; }
@@ -381,7 +400,7 @@ async function exportToPdf() {
         </style>
       </head>
       <body>
-        ${previewElement.innerHTML}
+        ${previewHTML}
       </body>
       </html>
     `;
@@ -389,10 +408,10 @@ async function exportToPdf() {
     printWindow.document.write(printContent);
     printWindow.document.close();
     
-    printWindow.onload = function() {
+    setTimeout(function() {
       printWindow.focus();
       printWindow.print();
-    };
+    }, 300);
     
     message('打印窗口已打开，请选择"保存为PDF"', { type: 'info' });
     
