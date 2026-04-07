@@ -1,4 +1,5 @@
 import 'vditor/dist/index.css'
+import '../style.css'
 import { message, confirm } from '@tauri-apps/api/dialog'
 import { appWindow } from '@tauri-apps/api/window'
 import { initErrorHandling } from './utils/errorHandler.js'
@@ -272,12 +273,29 @@ function setupEventListeners() {
   })
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-  console.log('[index] DOMContentLoaded')
-  initErrorHandling()
-  setCallbacks(updateCurrentFileNameUI, setModifiedUI)
-  initTheme()
-  updateUIText()
-  initVditor('sv', '')
-  setupEventListeners()
+function initApp() {
+  console.log('[index] initApp called')
+  try {
+    initErrorHandling()
+    setCallbacks(updateCurrentFileNameUI, setModifiedUI)
+    initTheme()
+    updateUIText()
+    initVditor('sv', '')
+    setupEventListeners()
+    console.log('[index] initApp completed successfully')
+  } catch (error) {
+    console.error('[index] Error in initApp:', error)
+  }
+}
+
+if (document.readyState === 'loading') {
+  console.log('[index] Document still loading, waiting for DOMContentLoaded')
+  document.addEventListener('DOMContentLoaded', initApp)
+} else {
+  console.log('[index] Document already loaded, calling initApp immediately')
+  initApp()
+}
+
+window.addEventListener('load', () => {
+  console.log('[index] window load event')
 })
