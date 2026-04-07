@@ -236,7 +236,6 @@ export function initVditor(mode = 'sv', initialContent = '') {
     preview: {
       theme: {
         current: vditorTheme,
-        path: './node_modules/vditor/dist/css/content-theme',
       },
       hljs: {
         enable: true,
@@ -258,9 +257,6 @@ export function initVditor(mode = 'sv', initialContent = '') {
         fixTermTypo: true,
         mermaid: true,
       },
-    },
-    hint: {
-      emojiPath: './node_modules/vditor/dist/images/emoji',
     },
     toolbar: [
       'emoji',
