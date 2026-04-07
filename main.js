@@ -20,7 +20,11 @@ function initVditor(mode = 'sv', initialContent = '') {
   let currentContent = initialContent;
   if (vditor) {
     try {
-      currentContent = vditor.getValue();
+      if (initialContent === '') {
+        currentContent = '';
+      } else {
+        currentContent = vditor.getValue();
+      }
     } catch (e) {
       console.warn('Error getting content:', e);
     }
@@ -108,9 +112,7 @@ function initVditor(mode = 'sv', initialContent = '') {
     after: () => {
       console.log('Vditor initialized with mode:', mode);
       updateModeButtons(mode);
-      if (currentContent) {
-        vditor.setValue(currentContent);
-      }
+      vditor.setValue(currentContent);
     },
     input: () => {
       setModified(true);
