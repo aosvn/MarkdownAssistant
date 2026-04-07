@@ -318,15 +318,9 @@ async function exportToPdf() {
     
     closePdfModal();
     
-    const previewElement = document.querySelector('.vditor-preview');
-    if (!previewElement) {
-      message('无法获取预览内容', { type: 'error' });
-      return;
-    }
-    
     const marginMap = {
-      default: 10,
-      minimum: 5,
+      default: 20,
+      minimum: 10,
       none: 0
     };
     
@@ -334,18 +328,47 @@ async function exportToPdf() {
       margin: marginMap[margin],
       filename: defaultFileName,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
+      html2canvas: { 
+        scale: 2, 
+        useCORS: true,
+        allowTaint: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      },
       jsPDF: { unit: 'mm', format: pageSize, orientation: orientation }
     };
     
     message('正在生成PDF...', { type: 'info' });
     
-    const blob = await html2pdf().from(previewElement).set(opt).outputPdf('blob');
-    const arrayBuffer = await blob.arrayBuffer();
-    const uint8Array = new Uint8Array(arrayBuffer);
+    const previewElement = document.querySelector('.vditor-preview, .vditor-content, .vditor');
     
-    await writeBinaryFile(filePath, uint8Array);
-    message('PDF导出成功！', { type: 'success' });
+    if (!previewElement) {
+      message('无法获取预览内容，请尝试切换到预览模式', { type: 'error' });
+      return;
+    }
+    
+    const elementToExport = previewElement.cloneNode(true);
+    elementToExport.style.position = 'absolute';
+    elementToExport.style.left = '-9999px';
+    elementToExport.style.top = '0';
+    elementToExport.style.width = '800px';
+    elementToExport.style.backgroundColor = 'white';
+    elementToExport.style.padding = '20px';
+    elementToExport.style.zIndex = '-1';
+    document.body.appendChild(elementToExport);
+    
+    try {
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const blob = await html2pdf().from(elementToExport).set(opt).outputPdf('blob');
+      const arrayBuffer = await blob.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      
+      await writeBinaryFile(filePath, uint8Array);
+      message('PDF导出成功！', { type: 'success' });
+    } finally {
+      document.body.removeChild(elementToExport);
+    }
     
   } catch (error) {
     console.error('Error exporting PDF:', error);
