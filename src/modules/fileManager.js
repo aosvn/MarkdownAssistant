@@ -11,6 +11,12 @@ let setModifiedCallback = null
 
 export function setVditorInstance(vditor) {
   vditorInstance = vditor
+  if (vditorInstance) {
+    console.log('[fileManager] Setting vditor input callback')
+    vditorInstance.options.input = () => {
+      setModified(true)
+    }
+  }
 }
 
 export function setCallbacks(updateFileName, setModified) {

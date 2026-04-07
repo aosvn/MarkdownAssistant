@@ -1,4 +1,3 @@
-import Vditor from 'vditor'
 import 'vditor/dist/index.css'
 import { message, confirm } from '@tauri-apps/api/dialog'
 import { appWindow } from '@tauri-apps/api/window'
@@ -258,13 +257,6 @@ function setupEventListeners() {
     }
   })
 
-  const vditor = getVditor()
-  if (vditor) {
-    vditor.options.input = () => {
-      setModified(true)
-    }
-  }
-
   appWindow.onCloseRequested((event) => {
     if (getIsModified()) {
       event.preventDefault()
@@ -281,6 +273,7 @@ function setupEventListeners() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  console.log('[index] DOMContentLoaded')
   initErrorHandling()
   setCallbacks(updateCurrentFileNameUI, setModifiedUI)
   initTheme()

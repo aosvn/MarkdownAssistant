@@ -193,56 +193,71 @@ export function setCurrentMode(mode) {
 }
 
 export function initVditor(mode = 'sv', initialContent = '') {
-  console.log('[editor] initVditor called with mode:', mode, 'initialContent length:', initialContent.length)
-  console.log('[editor] initialContent preview:', initialContent.substring(0, 100))
-  
-  const container = document.getElementById('vditor')
-  const currentTheme = getCurrentTheme()
-  const vditorTheme = currentTheme === 'dark' ? 'dark' : 'light'
-  
-  let currentContent = initialContent
-  if (vditor) {
-    try {
-      if (initialContent === '') {
-        currentContent = ''
+  try {
+    console.log('[editor] initVditor called with mode:', mode, 'initialContent length:', initialContent.length)
+    console.log('[editor] initialContent preview:', initialContent.substring(0, 100))
+    
+    const container = document.getElementById('vditor')
+    if (!container) {
+      console.error('[editor] Container element #vditor not found!')
+      return
+    }
+    
+    const currentTheme = getCurrentTheme()
+    const vditorTheme = currentTheme === 'dark' ? 'dark' : 'light'
+    
+    let currentContent = initialContent
+    if (vditor) {
+      try {
+        if (initialContent === '') {
+          currentContent = ''
+        }
+      } catch (e) {
+        console.warn('[editor] Error handling content:', e)
       }
-    } catch (e) {
-      console.warn('[editor] Error handling content:', e)
+      try {
+        vditor.destroy()
+      } catch (e) {
+        console.warn('[editor] Error destroying Vditor:', e)
+      }
+      vditor = null
     }
-    try {
-      vditor.destroy()
-    } catch (e) {
-      console.warn('[editor] Error destroying Vditor:', e)
-    }
-    vditor = null
-  }
-  
-  container.innerHTML = ''
-  
-  console.log('[editor] Creating Vditor with simple config...')
-  console.log('[editor] Current content to set:', currentContent.substring(0, 100))
-  
-  vditor = new Vditor('vditor', {
-    height: '100%',
-    mode: mode,
-    theme: vditorTheme,
-    value: currentContent,
-    cache: {
-      enable: false,
-    },
-    i18n: vditorI18n['zh-CN'],
-    after: () => {
-      console.log('[editor] Vditor initialized with mode:', mode)
-      updateModeButtons(mode)
-      console.log('[editor] Vditor value after init:', vditor.getValue().substring(0, 100))
-    },
-    input: () => {
-    },
-  })
+    
+    container.innerHTML = ''
+    
+    console.log('[editor] Creating Vditor with simple config...')
+    console.log('[editor] Current content to set:', currentContent.substring(0, 100))
+    
+    vditor = new Vditor('vditor', {
+      height: '100%',
+      mode: mode,
+      theme: vditorTheme,
+      value: currentContent,
+      cache: {
+        enable: false,
+      },
+      i18n: vditorI18n['zh-CN'],
+      after: () => {
+        console.log('[editor] Vditor initialized with mode:', mode)
+        updateModeButtons(mode)
+        try {
+          console.log('[editor] Vditor value after init:', vditor.getValue().substring(0, 100))
+        } catch (e) {
+          console.error('[editor] Error getting value after init:', e)
+        }
+      },
+      input: () => {
+      },
+    })
 
-  setThemeVditorInstance(vditor)
-  setFileManagerVditorInstance(vditor)
-  currentMode = mode
+    setThemeVditorInstance(vditor)
+    setFileManagerVditorInstance(vditor)
+    currentMode = mode
+    console.log('[editor] initVditor completed successfully')
+  } catch (error) {
+    console.error('[editor] Error in initVditor:', error)
+    console.error('[editor] Error stack:', error.stack)
+  }
 }
 
 export function updateModeButtons(mode) {
