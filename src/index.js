@@ -90,6 +90,17 @@ function handleLocaleChange(locale) {
   setLocale(locale)
   updateUIText()
   updateLangButtons()
+  
+  const vditor = getVditor()
+  if (vditor) {
+    try {
+      const currentContent = vditor.getValue()
+      const currentMode = document.querySelector('.mode-btn.active')?.dataset.mode || 'sv'
+      initVditor(currentMode, currentContent)
+    } catch (e) {
+      console.warn('Error reinitializing Vditor for locale change:', e)
+    }
+  }
 }
 
 function updateCurrentFileNameUI(name) {
