@@ -1,11 +1,14 @@
 import Vditor from 'vditor';
 import { open, save, confirm, message } from '@tauri-apps/api/dialog';
-import { readTextFile, writeTextFile } from '@tauri-apps/api/fs';
+import { readTextFile, writeTextFile, writeBinaryFile } from '@tauri-apps/api/fs';
 import { appWindow } from '@tauri-apps/api/window';
+import html2pdf from 'html2pdf.js';
 
 let vditor;
 let currentFilePath = null;
 let isModified = false;
+const HISTORY_KEY = 'markdown_assistant_file_history';
+const MAX_HISTORY = 50;
 
 function initVditor(mode = 'sv', initialContent = '') {
   const container = document.getElementById('vditor');
@@ -125,6 +128,231 @@ function updateCurrentFileName(name) {
   document.getElementById('currentFile').textContent = name || '未命名文件';
 }
 
+function getFileHistory() {
+  try {
+    const history = localStorage.getItem(HISTORY_KEY);
+    return history ? JSON.parse(history) : [];
+  } catch (e) {
+    console.error('Error reading file history:', e);
+    return [];
+  }
+}
+
+function saveFileHistory(history) {
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+  } catch (e) {
+    console.error('Error saving file history:', e);
+  }
+}
+
+function addToHistory(filePath) {
+  if (!filePath) return;
+  
+  let history = getFileHistory();
+  const now = Date.now();
+  const pathParts = filePath.split(/[/\\]/);
+  const fileName = pathParts[pathParts.length - 1];
+  
+  history = history.filter(item => item.path !== filePath);
+  history.unshift({
+    path: filePath,
+    name: fileName,
+    time: now
+  });
+  
+  if (history.length > MAX_HISTORY) {
+    history = history.slice(0, MAX_HISTORY);
+  }
+  
+  saveFileHistory(history);
+}
+
+function removeFromHistory(filePath) {
+  let history = getFileHistory();
+  history = history.filter(item => item.path !== filePath);
+  saveFileHistory(history);
+  renderHistoryList();
+}
+
+function clearAllHistory() {
+  saveFileHistory([]);
+  renderHistoryList();
+}
+
+function formatTime(timestamp) {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diff = now - date;
+  
+  if (diff < 60000) {
+    return '刚刚';
+  } else if (diff < 3600000) {
+    return `${Math.floor(diff / 60000)} 分钟前`;
+  } else if (diff < 86400000) {
+    return `${Math.floor(diff / 3600000)} 小时前`;
+  } else if (diff < 604800000) {
+    return `${Math.floor(diff / 86400000)} 天前`;
+  } else {
+    return date.toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+}
+
+function renderHistoryList() {
+  const history = getFileHistory();
+  const container = document.getElementById('historyList');
+  
+  if (history.length === 0) {
+    container.innerHTML = '<div class="empty-history">暂无历史文件</div>';
+    return;
+  }
+  
+  container.innerHTML = history.map(item => `
+    <div class="history-item" data-path="${item.path}">
+      <div class="history-item-info">
+        <div class="history-item-name">${item.name}</div>
+        <div class="history-item-path">${item.path}</div>
+      </div>
+      <div class="history-item-time">${formatTime(item.time)}</div>
+      <button class="history-item-remove" data-path="${item.path}" title="删除">×</button>
+    </div>
+  `).join('');
+  
+  container.querySelectorAll('.history-item').forEach(item => {
+    item.addEventListener('click', (e) => {
+      if (!e.target.classList.contains('history-item-remove')) {
+        openHistoryFile(item.dataset.path);
+      }
+    });
+  });
+  
+  container.querySelectorAll('.history-item-remove').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      removeFromHistory(btn.dataset.path);
+    });
+  });
+}
+
+function openHistoryModal() {
+  renderHistoryList();
+  document.getElementById('historyModal').classList.remove('hidden');
+  document.getElementById('overlay').classList.remove('hidden');
+}
+
+function closeHistoryModal() {
+  document.getElementById('historyModal').classList.add('hidden');
+  document.getElementById('overlay').classList.add('hidden');
+}
+
+async function openHistoryFile(filePath) {
+  try {
+    if (isModified) {
+      const confirmed = await confirm('当前文件未保存，是否继续打开历史文件？', {
+        title: '确认',
+        type: 'warning',
+      });
+      if (!confirmed) return;
+    }
+    
+    const content = await readTextFile(filePath);
+    vditor.setValue(content);
+    currentFilePath = filePath;
+    const pathParts = filePath.split(/[/\\]/);
+    updateCurrentFileName(pathParts[pathParts.length - 1]);
+    setModified(false);
+    addToHistory(filePath);
+    closeHistoryModal();
+  } catch (error) {
+    console.error('Error opening history file:', error);
+    message('打开文件失败', { type: 'error' });
+  }
+}
+
+function openPdfModal() {
+  document.getElementById('pdfModal').classList.remove('hidden');
+  document.getElementById('overlay').classList.remove('hidden');
+}
+
+function closePdfModal() {
+  document.getElementById('pdfModal').classList.add('hidden');
+  document.getElementById('overlay').classList.add('hidden');
+}
+
+async function exportToPdf() {
+  try {
+    const pageSize = document.getElementById('pdfPageSize').value;
+    const orientation = document.getElementById('pdfOrientation').value;
+    const margin = document.getElementById('pdfMargin').value;
+    
+    const content = vditor.getValue();
+    if (!content.trim()) {
+      message('文档内容为空，无法导出', { type: 'warning' });
+      return;
+    }
+    
+    let defaultFileName = 'document.pdf';
+    if (currentFilePath) {
+      const pathParts = currentFilePath.split(/[/\\]/);
+      const fileName = pathParts[pathParts.length - 1].replace(/\.(md|markdown)$/i, '');
+      defaultFileName = `${fileName}.pdf`;
+    }
+    
+    const filePath = await save({
+      filters: [
+        {
+          name: 'PDF',
+          extensions: ['pdf'],
+        },
+      ],
+      defaultPath: defaultFileName,
+    });
+    
+    if (!filePath) return;
+    
+    closePdfModal();
+    
+    const previewElement = document.querySelector('.vditor-preview');
+    if (!previewElement) {
+      message('无法获取预览内容', { type: 'error' });
+      return;
+    }
+    
+    const marginMap = {
+      default: 10,
+      minimum: 5,
+      none: 0
+    };
+    
+    const opt = {
+      margin: marginMap[margin],
+      filename: defaultFileName,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'mm', format: pageSize, orientation: orientation }
+    };
+    
+    message('正在生成PDF...', { type: 'info' });
+    
+    const blob = await html2pdf().from(previewElement).set(opt).outputPdf('blob');
+    const arrayBuffer = await blob.arrayBuffer();
+    const uint8Array = new Uint8Array(arrayBuffer);
+    
+    await writeBinaryFile(filePath, uint8Array);
+    message('PDF导出成功！', { type: 'success' });
+    
+  } catch (error) {
+    console.error('Error exporting PDF:', error);
+    message('导出PDF失败: ' + error.message, { type: 'error' });
+  }
+}
+
 async function newFile() {
   if (isModified) {
     const confirmed = await confirm('当前文件未保存，是否继续创建新文件？', {
@@ -166,6 +394,7 @@ async function openFile() {
       const pathParts = selected.split(/[/\\]/);
       updateCurrentFileName(pathParts[pathParts.length - 1]);
       setModified(false);
+      addToHistory(selected);
     }
   } catch (error) {
     console.error('Error opening file:', error);
@@ -182,6 +411,7 @@ async function saveFile() {
     const content = vditor.getValue();
     await writeTextFile(currentFilePath, content);
     setModified(false);
+    addToHistory(currentFilePath);
     message('文件保存成功', { type: 'success' });
   } catch (error) {
     console.error('Error saving file:', error);
@@ -206,6 +436,7 @@ async function saveAsFile() {
       const pathParts = filePath.split(/[/\\]/);
       updateCurrentFileName(pathParts[pathParts.length - 1]);
       setModified(false);
+      addToHistory(filePath);
       message('文件保存成功', { type: 'success' });
     }
   } catch (error) {
@@ -247,13 +478,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('newFile').addEventListener('click', newFile);
   document.getElementById('openFile').addEventListener('click', openFile);
+  document.getElementById('historyBtn').addEventListener('click', openHistoryModal);
   document.getElementById('saveFile').addEventListener('click', saveFile);
   document.getElementById('saveAsFile').addEventListener('click', saveAsFile);
+  document.getElementById('exportPdf').addEventListener('click', openPdfModal);
 
   document.querySelectorAll('.mode-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       switchMode(btn.dataset.mode);
     });
+  });
+
+  document.getElementById('closeHistoryModal').addEventListener('click', closeHistoryModal);
+  document.getElementById('clearAllHistory').addEventListener('click', async () => {
+    const confirmed = await confirm('确定要清除全部历史记录吗？', {
+      title: '确认',
+      type: 'warning',
+    });
+    if (confirmed) {
+      clearAllHistory();
+      message('已清除全部历史记录', { type: 'success' });
+    }
+  });
+
+  document.getElementById('closePdfModal').addEventListener('click', closePdfModal);
+  document.getElementById('cancelPdf').addEventListener('click', closePdfModal);
+  document.getElementById('confirmPdf').addEventListener('click', exportToPdf);
+
+  document.getElementById('overlay').addEventListener('click', () => {
+    closeHistoryModal();
+    closePdfModal();
   });
 
   document.addEventListener('keydown', async (e) => {
@@ -272,6 +526,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'o') {
       e.preventDefault();
       await openFile();
+    }
+    if (e.key === 'Escape') {
+      closeHistoryModal();
+      closePdfModal();
     }
   });
 
