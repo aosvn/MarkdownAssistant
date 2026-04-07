@@ -1,4 +1,5 @@
 import Vditor from 'vditor'
+import 'vditor/dist/index.css'
 import { message, confirm } from '@tauri-apps/api/dialog'
 import { appWindow } from '@tauri-apps/api/window'
 import { initErrorHandling } from './utils/errorHandler.js'
