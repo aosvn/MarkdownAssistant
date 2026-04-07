@@ -453,6 +453,33 @@ async function exportToPdf() {
   }
 }
 
+async function closeFile() {
+  try {
+    if (!currentFilePath && !isModified && vditor && vditor.getValue().trim() === '') {
+      message('当前没有打开的文件', { type: 'info' });
+      return;
+    }
+
+    if (isModified) {
+      const confirmed = await confirm('当前文件未保存，确定要关闭吗？', {
+        title: '确认关闭',
+        type: 'warning',
+      });
+      if (!confirmed) return;
+    }
+
+    const currentMode = document.querySelector('.mode-btn.active')?.dataset.mode || 'sv';
+    initVditor(currentMode, '');
+    currentFilePath = null;
+    updateCurrentFileName('未命名文件');
+    setModified(false);
+    message('文件已关闭', { type: 'success' });
+  } catch (error) {
+    console.error('Error closing file:', error);
+    message('关闭文件失败: ' + error.message, { type: 'error' });
+  }
+}
+
 async function newFile() {
   if (isModified) {
     const confirmed = await confirm('当前文件未保存，是否继续创建新文件？', {
@@ -581,6 +608,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('historyBtn').addEventListener('click', openHistoryModal);
   document.getElementById('saveFile').addEventListener('click', saveFile);
   document.getElementById('saveAsFile').addEventListener('click', saveAsFile);
+  document.getElementById('closeFile').addEventListener('click', closeFile);
   document.getElementById('exportPdf').addEventListener('click', openPdfModal);
 
   document.querySelectorAll('.mode-btn').forEach(btn => {
@@ -626,6 +654,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'o') {
       e.preventDefault();
       await openFile();
+    }
+    if ((e.ctrlKey || e.metaKey) && e.key === 'w') {
+      e.preventDefault();
+      await closeFile();
     }
     if (e.key === 'Escape') {
       closeHistoryModal();
