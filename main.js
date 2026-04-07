@@ -3,7 +3,6 @@ import { open, save, confirm, message } from '@tauri-apps/api/dialog';
 import { readTextFile, writeTextFile, writeBinaryFile } from '@tauri-apps/api/fs';
 import { appWindow } from '@tauri-apps/api/window';
 import html2pdf from 'html2pdf.js';
-import { jsPDF } from 'jspdf';
 
 let vditor;
 let currentFilePath = null;
@@ -342,19 +341,26 @@ function getPdfStyles() {
     * {
       box-sizing: border-box;
     }
+    html, body {
+      margin: 0;
+      padding: 0;
+    }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       padding: 20px;
-      max-width: 800px;
-      margin: 0 auto;
+      max-width: 100%;
       line-height: 1.6;
       color: #24292e;
+      word-wrap: break-word;
+      overflow-wrap: break-word;
     }
     h1, h2, h3, h4, h5, h6 {
       margin-top: 1.5em;
       margin-bottom: 0.5em;
       font-weight: 600;
       color: #24292e;
+      page-break-after: avoid;
+      page-break-inside: avoid;
     }
     h1 { font-size: 2em; }
     h2 { font-size: 1.5em; }
@@ -373,6 +379,7 @@ function getPdfStyles() {
       border-radius: 6px;
       overflow-x: auto;
       margin: 1em 0;
+      page-break-inside: avoid;
     }
     pre code {
       background-color: transparent;
@@ -385,6 +392,7 @@ function getPdfStyles() {
       padding-left: 16px;
       margin-left: 0;
       color: #6a737d;
+      page-break-inside: avoid;
     }
     ul, ol {
       padding-left: 2em;
@@ -395,6 +403,7 @@ function getPdfStyles() {
       border-collapse: collapse;
       width: 100%;
       margin: 1em 0;
+      page-break-inside: avoid;
     }
     th, td {
       border: 1px solid #dfe2e5;
@@ -402,13 +411,28 @@ function getPdfStyles() {
       text-align: left;
     }
     th { background-color: #f6f8fa; }
-    img { max-width: 100%; height: auto; }
+    img { 
+      max-width: 100%; 
+      height: auto; 
+      page-break-inside: avoid;
+    }
     a { color: #0366d6; text-decoration: none; }
     a:hover { text-decoration: underline; }
     hr {
       border: none;
       border-top: 1px solid #dfe2e5;
       margin: 2em 0;
+    }
+    .page-break {
+      page-break-before: always;
+    }
+    @media print {
+      @page {
+        margin: 15mm;
+      }
+      body {
+        padding: 0;
+      }
     }
   `;
 }
@@ -475,16 +499,35 @@ async function exportViaHtml2Pdf(pageSize, orientation, margin) {
 
   const element = document.createElement('div');
   element.innerHTML = previewHTML;
-  element.style.cssText = getPdfStyles();
+  
+  const styleElement = document.createElement('style');
+  styleElement.textContent = getPdfStyles();
+  element.insertBefore(styleElement, element.firstChild);
+  
+  element.style.width = '100%';
+  element.style.maxWidth = 'none';
   document.body.appendChild(element);
 
   const marginValue = getMarginValue(margin);
   const opt = {
     margin: marginValue,
     filename: 'document.pdf',
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true },
-    jsPDF: { unit: 'mm', format: pageSize, orientation: orientation }
+    image: { type: 'png', quality: 1 },
+    html2canvas: { 
+      scale: 2, 
+      useCORS: true,
+      logging: false,
+      letterRendering: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff'
+    },
+    jsPDF: { 
+      unit: 'mm', 
+      format: pageSize, 
+      orientation: orientation,
+      compress: true
+    },
+    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
   };
 
   try {
@@ -496,98 +539,6 @@ async function exportViaHtml2Pdf(pageSize, orientation, margin) {
     message('导出PDF失败: ' + error.message, { type: 'error' });
   } finally {
     document.body.removeChild(element);
-  }
-}
-
-async function exportViaJsPdf(pageSize, orientation, margin) {
-  const content = vditor.getValue();
-  if (!content.trim()) {
-    message('文档内容为空，无法导出', { type: 'warning' });
-    return;
-  }
-
-  try {
-    message('正在导出PDF...', { type: 'info' });
-    
-    const doc = new jsPDF({
-      orientation: orientation,
-      unit: 'mm',
-      format: pageSize
-    });
-
-    const marginValue = getMarginValue(margin);
-    const leftMargin = marginValue[0];
-    const topMargin = marginValue[1];
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const maxWidth = pageWidth - leftMargin - marginValue[2];
-    
-    let yPosition = topMargin;
-    const lineHeight = 6;
-    
-    const lines = content.split('\n');
-    
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      
-      if (yPosition > pageHeight - marginValue[3] - lineHeight) {
-        doc.addPage();
-        yPosition = topMargin;
-      }
-      
-      if (line.startsWith('# ')) {
-        doc.setFontSize(20);
-        doc.setFont('helvetica', 'bold');
-        doc.text(line.substring(2), leftMargin, yPosition);
-        yPosition += lineHeight * 1.5;
-      } else if (line.startsWith('## ')) {
-        doc.setFontSize(16);
-        doc.setFont('helvetica', 'bold');
-        doc.text(line.substring(3), leftMargin, yPosition);
-        yPosition += lineHeight * 1.3;
-      } else if (line.startsWith('### ')) {
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'bold');
-        doc.text(line.substring(4), leftMargin, yPosition);
-        yPosition += lineHeight * 1.2;
-      } else if (line.startsWith('> ')) {
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'italic');
-        doc.setTextColor(100, 100, 100);
-        doc.text(line.substring(2), leftMargin + 5, yPosition);
-        doc.setTextColor(0, 0, 0);
-        yPosition += lineHeight;
-      } else if (line.startsWith('```')) {
-        doc.setFontSize(10);
-        doc.setFont('courier', 'normal');
-        doc.setFillColor(246, 248, 250);
-        doc.roundedRect(leftMargin, yPosition - 3, maxWidth, lineHeight * 2, 2, 2, 'F');
-        i++;
-        let codeContent = '';
-        while (i < lines.length && !lines[i].startsWith('```')) {
-          codeContent += lines[i] + '\n';
-          i++;
-        }
-        doc.text(codeContent.trim(), leftMargin + 2, yPosition + 3);
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(12);
-        yPosition += lineHeight * (codeContent.split('\n').length + 1);
-      } else if (line.trim() === '') {
-        yPosition += lineHeight * 0.5;
-      } else {
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'normal');
-        const wrappedText = doc.splitTextToSize(line, maxWidth);
-        doc.text(wrappedText, leftMargin, yPosition);
-        yPosition += lineHeight * wrappedText.length;
-      }
-    }
-
-    doc.save('document.pdf');
-    message('PDF导出成功', { type: 'success' });
-  } catch (error) {
-    console.error('Error exporting PDF via jsPDF:', error);
-    message('导出PDF失败: ' + error.message, { type: 'error' });
   }
 }
 
@@ -612,9 +563,6 @@ async function exportToPdf() {
         break;
       case 'html2pdf':
         await exportViaHtml2Pdf(pageSize, orientation, margin);
-        break;
-      case 'jspdf':
-        await exportViaJsPdf(pageSize, orientation, margin);
         break;
       default:
         await exportViaBrowser(pageSize, orientation, margin);
