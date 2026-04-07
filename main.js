@@ -490,58 +490,6 @@ async function exportViaBrowser(pageSize, orientation, margin) {
   message('打印窗口已打开，请选择"保存为PDF"', { type: 'info' });
 }
 
-async function exportViaHtml2Pdf(pageSize, orientation, margin) {
-  const previewHTML = getCleanPreviewHTML();
-  if (!previewHTML) {
-    message('无法获取预览内容，请尝试切换到分屏或预览模式', { type: 'error' });
-    return;
-  }
-
-  const element = document.createElement('div');
-  element.innerHTML = previewHTML;
-  
-  const styleElement = document.createElement('style');
-  styleElement.textContent = getPdfStyles();
-  element.insertBefore(styleElement, element.firstChild);
-  
-  element.style.width = '100%';
-  element.style.maxWidth = 'none';
-  document.body.appendChild(element);
-
-  const marginValue = getMarginValue(margin);
-  const opt = {
-    margin: marginValue,
-    filename: 'document.pdf',
-    image: { type: 'png', quality: 1 },
-    html2canvas: { 
-      scale: 2, 
-      useCORS: true,
-      logging: false,
-      letterRendering: true,
-      allowTaint: true,
-      backgroundColor: '#ffffff'
-    },
-    jsPDF: { 
-      unit: 'mm', 
-      format: pageSize, 
-      orientation: orientation,
-      compress: true
-    },
-    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
-  };
-
-  try {
-    message('正在导出PDF...', { type: 'info' });
-    await html2pdf().set(opt).from(element).save();
-    message('PDF导出成功', { type: 'success' });
-  } catch (error) {
-    console.error('Error exporting PDF via html2pdf:', error);
-    message('导出PDF失败: ' + error.message, { type: 'error' });
-  } finally {
-    document.body.removeChild(element);
-  }
-}
-
 async function exportToPdf() {
   try {
     const content = vditor.getValue();
@@ -552,21 +500,11 @@ async function exportToPdf() {
     
     closePdfModal();
     
-    const method = document.getElementById('pdfMethod').value;
     const pageSize = document.getElementById('pdfPageSize').value;
     const orientation = document.getElementById('pdfOrientation').value;
     const margin = document.getElementById('pdfMargin').value;
     
-    switch (method) {
-      case 'browser':
-        await exportViaBrowser(pageSize, orientation, margin);
-        break;
-      case 'html2pdf':
-        await exportViaHtml2Pdf(pageSize, orientation, margin);
-        break;
-      default:
-        await exportViaBrowser(pageSize, orientation, margin);
-    }
+    await exportViaBrowser(pageSize, orientation, margin);
     
   } catch (error) {
     console.error('Error exporting PDF:', error);
