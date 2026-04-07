@@ -1,7 +1,7 @@
 import Vditor from 'vditor'
 import { message, confirm } from '@tauri-apps/api/dialog'
 import { appWindow } from '@tauri-apps/api/window'
-import { initErrorHandling, setErrorHandlerI18n } from './utils/errorHandler.js'
+import { initErrorHandling } from './utils/errorHandler.js'
 import { initTheme, setTheme } from './modules/themeManager.js'
 import { 
   initVditor, 
@@ -31,80 +31,51 @@ import {
   renderHistoryList
 } from './modules/historyManager.js'
 import { exportToPdf, exportViaBrowser } from './modules/pdfExporter.js'
-import { initI18n, setLocale, t, getAvailableLocales, getLocale } from './i18n/index.js'
 
 function updateUIText() {
-  document.getElementById('newFile').title = t('toolbar.newFile')
-  document.getElementById('openFile').title = t('toolbar.openFile')
-  document.getElementById('historyBtn').title = t('toolbar.history')
-  document.getElementById('saveFile').title = t('toolbar.save')
-  document.getElementById('saveAsFile').title = t('toolbar.saveAs')
-  document.getElementById('closeFile').title = t('toolbar.close')
-  document.getElementById('exportPdf').title = t('toolbar.exportPdf')
+  document.getElementById('newFile').title = '新建文件'
+  document.getElementById('openFile').title = '打开文件'
+  document.getElementById('historyBtn').title = '历史文件'
+  document.getElementById('saveFile').title = '保存文件'
+  document.getElementById('saveAsFile').title = '另存为'
+  document.getElementById('closeFile').title = '关闭'
+  document.getElementById('exportPdf').title = '导出为PDF'
   
-  document.getElementById('themeLight').title = t('theme.light')
-  document.getElementById('themeDark').title = t('theme.dark')
-  document.getElementById('themeGray').title = t('theme.gray')
+  document.getElementById('themeLight').title = '浅色主题'
+  document.getElementById('themeDark').title = '深色主题'
+  document.getElementById('themeGray').title = '灰色主题'
   
-  document.querySelector('#themeLight .theme-label').textContent = t('theme.light')
-  document.querySelector('#themeDark .theme-label').textContent = t('theme.dark')
-  document.querySelector('#themeGray .theme-label').textContent = t('theme.gray')
+  document.querySelector('#themeLight .theme-label').textContent = '浅色'
+  document.querySelector('#themeDark .theme-label').textContent = '深色'
+  document.querySelector('#themeGray .theme-label').textContent = '灰色'
   
-  document.getElementById('modeWysiwyg').title = t('editor.mode.wysiwyg')
-  document.getElementById('modeIR').title = t('editor.mode.ir')
-  document.getElementById('modeSV').title = t('editor.mode.sv')
+  document.getElementById('modeWysiwyg').title = '所见即所得模式'
+  document.getElementById('modeIR').title = '即时渲染模式'
+  document.getElementById('modeSV').title = '分屏预览模式'
   
-  document.querySelector('#historyModal .modal-header h3').textContent = t('modal.history.title')
-  document.getElementById('clearAllHistory').textContent = t('modal.history.clearAll')
+  document.querySelector('#historyModal .modal-header h3').textContent = '历史文件'
+  document.getElementById('clearAllHistory').textContent = '清除全部历史'
   
-  document.querySelector('#pdfModal .modal-header h3').textContent = t('modal.pdf.title')
-  document.querySelector('#pdfModal label[for="pdfPageSize"]').textContent = t('modal.pdf.pageSize')
-  document.querySelector('#pdfModal label[for="pdfOrientation"]').textContent = t('modal.pdf.orientation')
-  document.querySelector('#pdfModal label[for="pdfMargin"]').textContent = t('modal.pdf.margin')
+  document.querySelector('#pdfModal .modal-header h3').textContent = '导出为PDF'
+  document.querySelector('#pdfModal label[for="pdfPageSize"]').textContent = '页面大小'
+  document.querySelector('#pdfModal label[for="pdfOrientation"]').textContent = '页面方向'
+  document.querySelector('#pdfModal label[for="pdfMargin"]').textContent = '边距'
   document.querySelector('#pdfPageSize option[value="a4"]').textContent = 'A4'
   document.querySelector('#pdfPageSize option[value="letter"]').textContent = 'Letter'
   document.querySelector('#pdfPageSize option[value="legal"]').textContent = 'Legal'
-  document.querySelector('#pdfOrientation option[value="portrait"]').textContent = t('modal.pdf.portrait')
-  document.querySelector('#pdfOrientation option[value="landscape"]').textContent = t('modal.pdf.landscape')
-  document.querySelector('#pdfMargin option[value="default"]').textContent = t('modal.pdf.default')
-  document.querySelector('#pdfMargin option[value="none"]').textContent = t('modal.pdf.none')
-  document.querySelector('#pdfMargin option[value="minimum"]').textContent = t('modal.pdf.minimum')
-  document.getElementById('cancelPdf').textContent = t('modal.pdf.cancel')
-  document.getElementById('confirmPdf').textContent = t('modal.pdf.confirm')
+  document.querySelector('#pdfOrientation option[value="portrait"]').textContent = '纵向'
+  document.querySelector('#pdfOrientation option[value="landscape"]').textContent = '横向'
+  document.querySelector('#pdfMargin option[value="default"]').textContent = '默认'
+  document.querySelector('#pdfMargin option[value="none"]').textContent = '无'
+  document.querySelector('#pdfMargin option[value="minimum"]').textContent = '最小'
+  document.getElementById('cancelPdf').textContent = '取消'
+  document.getElementById('confirmPdf').textContent = '导出'
   
   updateCurrentFileNameUI(getCurrentFilePath())
 }
 
-function updateLangButtons() {
-  const currentLocale = getLocale()
-  document.querySelectorAll('.lang-btn').forEach(btn => {
-    if (btn.dataset.locale === currentLocale) {
-      btn.classList.add('active')
-    } else {
-      btn.classList.remove('active')
-    }
-  })
-}
-
-function handleLocaleChange(locale) {
-  setLocale(locale)
-  updateUIText()
-  updateLangButtons()
-  
-  const vditor = getVditor()
-  if (vditor) {
-    try {
-      const currentContent = vditor.getValue()
-      const currentMode = document.querySelector('.mode-btn.active')?.dataset.mode || 'sv'
-      initVditor(currentMode, currentContent)
-    } catch (e) {
-      console.warn('Error reinitializing Vditor for locale change:', e)
-    }
-  }
-}
-
 function updateCurrentFileNameUI(name) {
-  const fileName = name || t('toolbar.currentFile')
+  const fileName = name || '未命名文件'
   document.getElementById('currentFile').textContent = fileName
 }
 
@@ -193,23 +164,17 @@ function setupEventListeners() {
     })
   })
 
-  document.querySelectorAll('.lang-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      handleLocaleChange(btn.dataset.locale)
-    })
-  })
-
   document.getElementById('closeHistoryModal').addEventListener('click', closeHistoryModal)
 
   document.getElementById('clearAllHistory').addEventListener('click', async () => {
-    const confirmed = await confirm(t('messages.warning.confirmClearHistory'), {
-      title: t('messages.confirm.title'),
+    const confirmed = await confirm('确定要清除全部历史记录吗？', {
+      title: '确认',
       type: 'warning',
     })
     if (confirmed) {
       clearAllHistory()
       renderHistoryList(document.getElementById('historyList'))
-      message(t('messages.success.historyCleared'), { type: 'success' })
+      message('已清除全部历史记录', { type: 'success' })
     }
   })
 
@@ -302,8 +267,8 @@ function setupEventListeners() {
   appWindow.onCloseRequested((event) => {
     if (getIsModified()) {
       event.preventDefault()
-      confirm(t('messages.warning.confirmExit'), {
-        title: t('messages.exit.title'),
+      confirm('文件尚未保存，确定要退出吗？', {
+        title: '确认退出',
         type: 'warning'
       }).then((confirmed) => {
         if (confirmed) {
@@ -316,12 +281,9 @@ function setupEventListeners() {
 
 document.addEventListener('DOMContentLoaded', () => {
   initErrorHandling()
-  initI18n()
-  setErrorHandlerI18n(t)
   setCallbacks(updateCurrentFileNameUI, setModifiedUI)
   initTheme()
   updateUIText()
-  updateLangButtons()
   initVditor('sv', '')
   setupEventListeners()
 })

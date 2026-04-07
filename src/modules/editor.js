@@ -1,7 +1,6 @@
 import Vditor from 'vditor'
 import { getCurrentTheme, updateVditorTheme, setVditorInstance as setThemeVditorInstance } from './themeManager.js'
 import { setVditorInstance as setFileManagerVditorInstance } from './fileManager.js'
-import { getLocale } from '../i18n/index.js'
 
 let vditor = null
 let currentMode = 'sv'
@@ -194,6 +193,9 @@ export function setCurrentMode(mode) {
 }
 
 export function initVditor(mode = 'sv', initialContent = '') {
+  console.log('[editor] initVditor called with mode:', mode, 'initialContent length:', initialContent.length)
+  console.log('[editor] initialContent preview:', initialContent.substring(0, 100))
+  
   const container = document.getElementById('vditor')
   const currentTheme = getCurrentTheme()
   const vditorTheme = currentTheme === 'dark' ? 'dark' : 'light'
@@ -203,38 +205,36 @@ export function initVditor(mode = 'sv', initialContent = '') {
     try {
       if (initialContent === '') {
         currentContent = ''
-      } else {
-        currentContent = vditor.getValue()
       }
     } catch (e) {
-      console.warn('Error getting content:', e)
+      console.warn('[editor] Error handling content:', e)
     }
     try {
       vditor.destroy()
     } catch (e) {
-      console.warn('Error destroying Vditor:', e)
+      console.warn('[editor] Error destroying Vditor:', e)
     }
     vditor = null
   }
   
   container.innerHTML = ''
   
-  console.log('Creating Vditor with simple config...')
+  console.log('[editor] Creating Vditor with simple config...')
+  console.log('[editor] Current content to set:', currentContent.substring(0, 100))
+  
   vditor = new Vditor('vditor', {
     height: '100%',
     mode: mode,
     theme: vditorTheme,
+    value: currentContent,
     cache: {
       enable: false,
     },
+    i18n: vditorI18n['zh-CN'],
     after: () => {
-      console.log('Vditor initialized with mode:', mode)
+      console.log('[editor] Vditor initialized with mode:', mode)
       updateModeButtons(mode)
-      try {
-        vditor.setValue(currentContent)
-      } catch (e) {
-        console.error('Error setting Vditor content:', e)
-      }
+      console.log('[editor] Vditor value after init:', vditor.getValue().substring(0, 100))
     },
     input: () => {
     },

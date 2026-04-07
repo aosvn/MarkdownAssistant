@@ -32,9 +32,7 @@
         "readDir": true,
         "exists": true,
         "scope": [
-          "$DOCUMENT/*",
-          "$DESKTOP/*",
-          "$HOME/Downloads/*"
+          "**"
         ]
       },
       "window": {

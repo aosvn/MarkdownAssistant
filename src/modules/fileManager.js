@@ -59,14 +59,19 @@ export async function newFile() {
 
 export async function openFile() {
   try {
+    console.log('[fileManager] openFile called')
     if (isModified) {
       const confirmed = await confirm('当前文件未保存，是否继续打开新文件？', {
         title: '确认',
         type: 'warning',
       })
-      if (!confirmed) return null
+      if (!confirmed) {
+        console.log('[fileManager] User cancelled open')
+        return null
+      }
     }
     
+    console.log('[fileManager] Opening file dialog')
     const selected = await open({
       multiple: false,
       filters: [
@@ -76,18 +81,25 @@ export async function openFile() {
         },
       ],
     })
+    console.log('[fileManager] Selected file:', selected)
     if (selected) {
+      console.log('[fileManager] Reading file content')
       const content = await readTextFile(selected)
+      console.log('[fileManager] File content length:', content.length)
+      console.log('[fileManager] File content preview:', content.substring(0, 100))
       currentFilePath = selected
       updateCurrentFileName(getFileNameFromPath(selected))
       setModified(false)
       addToHistory(selected)
+      console.log('[fileManager] Returning content')
       return content
     }
+    console.log('[fileManager] No file selected')
     return null
   } catch (error) {
-    console.error('Error opening file:', error)
-    message('打开文件失败', { type: 'error' })
+    console.error('[fileManager] Error opening file:', error)
+    console.error('[fileManager] Error stack:', error.stack)
+    message('打开文件失败: ' + error.message, { type: 'error' })
     return null
   }
 }
@@ -165,23 +177,32 @@ export async function closeFile() {
 
 export async function openHistoryFile(filePath) {
   try {
+    console.log('[fileManager] openHistoryFile called with filePath:', filePath)
     if (isModified) {
       const confirmed = await confirm('当前文件未保存，是否继续打开历史文件？', {
         title: '确认',
         type: 'warning',
       })
-      if (!confirmed) return null
+      if (!confirmed) {
+        console.log('[fileManager] User cancelled open history')
+        return null
+      }
     }
     
+    console.log('[fileManager] Reading history file:', filePath)
     const content = await readTextFile(filePath)
+    console.log('[fileManager] History file content length:', content.length)
+    console.log('[fileManager] History file content preview:', content.substring(0, 100))
     currentFilePath = filePath
     updateCurrentFileName(getFileNameFromPath(filePath))
     setModified(false)
     addToHistory(filePath)
+    console.log('[fileManager] Returning history content')
     return content
   } catch (error) {
-    console.error('Error opening history file:', error)
-    message('打开文件失败', { type: 'error' })
+    console.error('[fileManager] Error opening history file:', error)
+    console.error('[fileManager] Error stack:', error.stack)
+    message('打开文件失败: ' + error.message, { type: 'error' })
     return null
   }
 }
