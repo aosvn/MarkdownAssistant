@@ -9,9 +9,13 @@ let currentFilePath = null;
 let isModified = false;
 const HISTORY_KEY = 'markdown_assistant_file_history';
 const MAX_HISTORY = 50;
+const THEME_KEY = 'markdown_assistant_theme';
+const DEFAULT_THEME = 'light';
 
 function initVditor(mode = 'sv', initialContent = '') {
   const container = document.getElementById('vditor');
+  const currentTheme = getCurrentTheme();
+  const vditorTheme = currentTheme === 'dark' ? 'dark' : 'light';
   
   let currentContent = initialContent;
   if (vditor) {
@@ -33,7 +37,7 @@ function initVditor(mode = 'sv', initialContent = '') {
   vditor = new Vditor('vditor', {
     height: '100%',
     mode: mode,
-    theme: 'light',
+    theme: vditorTheme,
     icon: 'material',
     cache: {
       enable: false,
@@ -44,7 +48,7 @@ function initVditor(mode = 'sv', initialContent = '') {
     },
     preview: {
       theme: {
-        current: 'light',
+        current: vditorTheme,
         path: './node_modules/vditor/dist/css/content-theme',
       },
       hljs: {
@@ -659,7 +663,49 @@ function switchMode(mode) {
   }
 }
 
+function getCurrentTheme() {
+  return localStorage.getItem(THEME_KEY) || DEFAULT_THEME;
+}
+
+function setTheme(theme) {
+  try {
+    localStorage.setItem(THEME_KEY, theme);
+    document.documentElement.setAttribute('data-theme', theme);
+    
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+      btn.classList.remove('active');
+      if (btn.dataset.theme === theme) {
+        btn.classList.add('active');
+      }
+    });
+    
+    updateVditorTheme(theme);
+    
+    console.log('Theme switched to:', theme);
+  } catch (error) {
+    console.error('Failed to set theme:', error);
+  }
+}
+
+function updateVditorTheme(theme) {
+  if (!vditor) return;
+  
+  try {
+    const vditorTheme = theme === 'dark' ? 'dark' : 'light';
+    vditor.setTheme(vditorTheme);
+    vditor.setPreviewTheme(vditorTheme);
+  } catch (error) {
+    console.warn('Failed to update Vditor theme:', error);
+  }
+}
+
+function initTheme() {
+  const savedTheme = getCurrentTheme();
+  setTheme(savedTheme);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
   initVditor('sv', '');
 
   document.getElementById('newFile').addEventListener('click', newFile);
@@ -673,6 +719,12 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('.mode-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       switchMode(btn.dataset.mode);
+    });
+  });
+
+  document.querySelectorAll('.theme-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      setTheme(btn.dataset.theme);
     });
   });
 
