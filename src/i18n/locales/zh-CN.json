@@ -1,0 +1,66 @@
+{
+  "app": {
+    "title": "Markdown Assistant",
+    "version": "版本"
+  },
+  "toolbar": {
+    "newFile": "新建文件",
+    "openFile": "打开文件",
+    "history": "历史文件",
+    "save": "保存文件",
+    "saveAs": "另存为",
+    "close": "关闭文件",
+    "exportPdf": "导出为PDF",
+    "currentFile": "未命名文件",
+    "modified": "*"
+  },
+  "theme": {
+    "light": "浅色",
+    "dark": "深色",
+    "gray": "灰色"
+  },
+  "editor": {
+    "mode": {
+      "wysiwyg": "WYSIWYG",
+      "ir": "IR",
+      "sv": "SV"
+    }
+  },
+  "modal": {
+    "history": {
+      "title": "历史文件",
+      "empty": "暂无历史文件",
+      "clearAll": "清除全部历史"
+    },
+    "pdf": {
+      "title": "导出为PDF",
+      "pageSize": "页面大小",
+      "orientation": "页面方向",
+      "margin": "边距",
+      "portrait": "纵向",
+      "landscape": "横向",
+      "default": "默认",
+      "none": "无",
+      "minimum": "最小",
+      "cancel": "取消",
+      "confirm": "导出"
+    }
+  },
+  "messages": {
+    "error": {
+      "title": "错误",
+      "generic": "发生了一个错误，请刷新页面重试",
+      "operationFailed": "操作失败，请重试"
+    },
+    "success": {
+      "title": "成功",
+      "fileSaved": "文件保存成功",
+      "fileOpened": "文件打开成功",
+      "pdfExported": "PDF导出成功"
+    },
+    "warning": {
+      "title": "警告",
+      "unsavedChanges": "您有未保存的更改，确定要关闭吗？"
+    }
+  }
+}

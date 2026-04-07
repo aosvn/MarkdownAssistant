@@ -1,0 +1,66 @@
+{
+  "app": {
+    "title": "Markdown Assistant",
+    "version": "Version"
+  },
+  "toolbar": {
+    "newFile": "New File",
+    "openFile": "Open File",
+    "history": "History",
+    "save": "Save",
+    "saveAs": "Save As",
+    "close": "Close",
+    "exportPdf": "Export PDF",
+    "currentFile": "Untitled",
+    "modified": "*"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "gray": "Gray"
+  },
+  "editor": {
+    "mode": {
+      "wysiwyg": "WYSIWYG",
+      "ir": "IR",
+      "sv": "SV"
+    }
+  },
+  "modal": {
+    "history": {
+      "title": "File History",
+      "empty": "No history files",
+      "clearAll": "Clear All History"
+    },
+    "pdf": {
+      "title": "Export to PDF",
+      "pageSize": "Page Size",
+      "orientation": "Orientation",
+      "margin": "Margin",
+      "portrait": "Portrait",
+      "landscape": "Landscape",
+      "default": "Default",
+      "none": "None",
+      "minimum": "Minimum",
+      "cancel": "Cancel",
+      "confirm": "Export"
+    }
+  },
+  "messages": {
+    "error": {
+      "title": "Error",
+      "generic": "An error occurred, please refresh the page",
+      "operationFailed": "Operation failed, please try again"
+    },
+    "success": {
+      "title": "Success",
+      "fileSaved": "File saved successfully",
+      "fileOpened": "File opened successfully",
+      "pdfExported": "PDF exported successfully"
+    },
+    "warning": {
+      "title": "Warning",
+      "unsavedChanges": "You have unsaved changes. Are you sure you want to close?"
+    }
+  }
+}
