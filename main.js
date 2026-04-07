@@ -287,58 +287,13 @@ function closePdfModal() {
 
 async function exportToPdf() {
   try {
-    const pageSize = document.getElementById('pdfPageSize').value;
-    const orientation = document.getElementById('pdfOrientation').value;
-    const margin = document.getElementById('pdfMargin').value;
-    
     const content = vditor.getValue();
     if (!content.trim()) {
       message('文档内容为空，无法导出', { type: 'warning' });
       return;
     }
     
-    let defaultFileName = 'document.pdf';
-    if (currentFilePath) {
-      const pathParts = currentFilePath.split(/[/\\]/);
-      const fileName = pathParts[pathParts.length - 1].replace(/\.(md|markdown)$/i, '');
-      defaultFileName = `${fileName}.pdf`;
-    }
-    
-    const filePath = await save({
-      filters: [
-        {
-          name: 'PDF',
-          extensions: ['pdf'],
-        },
-      ],
-      defaultPath: defaultFileName,
-    });
-    
-    if (!filePath) return;
-    
     closePdfModal();
-    
-    const marginMap = {
-      default: 20,
-      minimum: 10,
-      none: 0
-    };
-    
-    const opt = {
-      margin: marginMap[margin],
-      filename: defaultFileName,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { 
-        scale: 2, 
-        useCORS: true,
-        allowTaint: true,
-        logging: false,
-        backgroundColor: '#ffffff'
-      },
-      jsPDF: { unit: 'mm', format: pageSize, orientation: orientation }
-    };
-    
-    message('正在生成PDF...', { type: 'info' });
     
     const previewElement = document.querySelector('.vditor-preview, .vditor-content, .vditor');
     
@@ -347,28 +302,99 @@ async function exportToPdf() {
       return;
     }
     
-    const elementToExport = previewElement.cloneNode(true);
-    elementToExport.style.position = 'absolute';
-    elementToExport.style.left = '-9999px';
-    elementToExport.style.top = '0';
-    elementToExport.style.width = '800px';
-    elementToExport.style.backgroundColor = 'white';
-    elementToExport.style.padding = '20px';
-    elementToExport.style.zIndex = '-1';
-    document.body.appendChild(elementToExport);
-    
-    try {
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      const blob = await html2pdf().from(elementToExport).set(opt).outputPdf('blob');
-      const arrayBuffer = await blob.arrayBuffer();
-      const uint8Array = new Uint8Array(arrayBuffer);
-      
-      await writeBinaryFile(filePath, uint8Array);
-      message('PDF导出成功！', { type: 'success' });
-    } finally {
-      document.body.removeChild(elementToExport);
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      message('无法打开打印窗口，请允许弹出窗口', { type: 'error' });
+      return;
     }
+    
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <title>Markdown Document</title>
+        <style>
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            line-height: 1.6;
+          }
+          h1, h2, h3, h4, h5, h6 {
+            margin-top: 1.5em;
+            margin-bottom: 0.5em;
+            font-weight: 600;
+          }
+          h1 { font-size: 2em; }
+          h2 { font-size: 1.5em; }
+          h3 { font-size: 1.25em; }
+          p { margin: 1em 0; }
+          code {
+            background-color: #f6f8fa;
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 0.9em;
+          }
+          pre {
+            background-color: #f6f8fa;
+            padding: 16px;
+            border-radius: 6px;
+            overflow-x: auto;
+          }
+          pre code {
+            background-color: transparent;
+            padding: 0;
+          }
+          blockquote {
+            border-left: 4px solid #dfe2e5;
+            padding-left: 16px;
+            margin-left: 0;
+            color: #6a737d;
+          }
+          ul, ol {
+            padding-left: 2em;
+            margin: 1em 0;
+          }
+          li { margin: 0.5em 0; }
+          table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 1em 0;
+          }
+          th, td {
+            border: 1px solid #dfe2e5;
+            padding: 8px 12px;
+            text-align: left;
+          }
+          th { background-color: #f6f8fa; }
+          img { max-width: 100%; height: auto; }
+          a { color: #0366d6; text-decoration: none; }
+          a:hover { text-decoration: underline; }
+          hr {
+            border: none;
+            border-top: 1px solid #dfe2e5;
+            margin: 2em 0;
+          }
+        </style>
+      </head>
+      <body>
+        ${previewElement.innerHTML}
+      </body>
+      </html>
+    `;
+    
+    printWindow.document.write(printContent);
+    printWindow.document.close();
+    
+    printWindow.onload = function() {
+      printWindow.focus();
+      printWindow.print();
+    };
+    
+    message('打印窗口已打开，请选择"保存为PDF"', { type: 'info' });
     
   } catch (error) {
     console.error('Error exporting PDF:', error);
