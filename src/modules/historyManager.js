@@ -1,0 +1,71 @@
+import { HISTORY_KEY, MAX_HISTORY } from '../utils/constants.js'
+import { formatTime, getFileNameFromPath } from '../utils/helpers.js'
+
+export function getFileHistory() {
+  try {
+    const history = localStorage.getItem(HISTORY_KEY)
+    return history ? JSON.parse(history) : []
+  } catch (e) {
+    console.error('Error reading file history:', e)
+    return []
+  }
+}
+
+export function saveFileHistory(history) {
+  try {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history))
+  } catch (e) {
+    console.error('Error saving file history:', e)
+  }
+}
+
+export function addToHistory(filePath) {
+  if (!filePath) return
+  
+  let history = getFileHistory()
+  const now = Date.now()
+  const fileName = getFileNameFromPath(filePath)
+  
+  history = history.filter(item => item.path !== filePath)
+  history.unshift({
+    path: filePath,
+    name: fileName,
+    time: now
+  })
+  
+  if (history.length > MAX_HISTORY) {
+    history = history.slice(0, MAX_HISTORY)
+  }
+  
+  saveFileHistory(history)
+}
+
+export function removeFromHistory(filePath) {
+  let history = getFileHistory()
+  history = history.filter(item => item.path !== filePath)
+  saveFileHistory(history)
+}
+
+export function clearAllHistory() {
+  saveFileHistory([])
+}
+
+export function renderHistoryList(container) {
+  const history = getFileHistory()
+  
+  if (history.length === 0) {
+    container.innerHTML = '<div class="empty-history">暂无历史文件</div>'
+    return
+  }
+  
+  container.innerHTML = history.map(item => `
+    <div class="history-item" data-path="${item.path}">
+      <div class="history-item-info">
+        <div class="history-item-name">${item.name}</div>
+        <div class="history-item-path">${item.path}</div>
+      </div>
+      <div class="history-item-time">${formatTime(item.time)}</div>
+      <button class="history-item-remove" data-path="${item.path}" title="删除">×</button>
+    </div>
+  `).join('')
+}
