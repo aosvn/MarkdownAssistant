@@ -197,7 +197,6 @@ export function initVditor(mode = 'sv', initialContent = '') {
   const container = document.getElementById('vditor')
   const currentTheme = getCurrentTheme()
   const vditorTheme = currentTheme === 'dark' ? 'dark' : 'light'
-  const locale = getLocale()
   
   let currentContent = initialContent
   if (vditor) {
@@ -220,85 +219,22 @@ export function initVditor(mode = 'sv', initialContent = '') {
   
   container.innerHTML = ''
   
+  console.log('Creating Vditor with simple config...')
   vditor = new Vditor('vditor', {
     height: '100%',
     mode: mode,
     theme: vditorTheme,
-    icon: 'material',
     cache: {
       enable: false,
     },
-    counter: {
-      enable: true,
-      type: 'lines',
-    },
-    i18n: vditorI18n[locale] || vditorI18n['zh-CN'],
-    preview: {
-      theme: {
-        current: vditorTheme,
-      },
-      hljs: {
-        enable: true,
-        style: 'github',
-        lineNumber: true,
-      },
-      math: {
-        inlineDigit: true,
-        engine: 'KaTeX',
-      },
-      mermaid: {
-        enable: true,
-      },
-      markdown: {
-        toc: true,
-        mark: true,
-        footnotes: true,
-        autoSpace: true,
-        fixTermTypo: true,
-        mermaid: true,
-      },
-    },
-    toolbar: [
-      'emoji',
-      'headings',
-      'bold',
-      'italic',
-      'strike',
-      '|',
-      'line',
-      'quote',
-      'list',
-      'ordered-list',
-      'check',
-      'outdent',
-      'indent',
-      '|',
-      'code',
-      'inline-code',
-      'link',
-      'image',
-      'table',
-      'mermaid',
-      '|',
-      'edit-mode',
-      'both',
-      'preview',
-      '|',
-      'fullscreen',
-      'read-mode',
-      'help',
-    ],
     after: () => {
       console.log('Vditor initialized with mode:', mode)
       updateModeButtons(mode)
-      // 使用setTimeout确保Vditor完全初始化后再设置内容
-      setTimeout(() => {
-        try {
-          vditor.setValue(currentContent)
-        } catch (e) {
-          console.error('Error setting Vditor content:', e)
-        }
-      }, 100)
+      try {
+        vditor.setValue(currentContent)
+      } catch (e) {
+        console.error('Error setting Vditor content:', e)
+      }
     },
     input: () => {
     },
