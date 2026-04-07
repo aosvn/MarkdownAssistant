@@ -316,6 +316,35 @@ async function exportToPdf() {
       return;
     }
     
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = previewHTML;
+    
+    tempDiv.querySelectorAll('.vditor-code, .vditor-ir__preview, .vditor-reset').forEach(el => {
+      el.classList.remove('vditor-code', 'vditor-ir__preview', 'vditor-reset');
+    });
+    
+    tempDiv.querySelectorAll('[class*="vditor-"]').forEach(el => {
+      const classesToRemove = Array.from(el.classList).filter(c => c.startsWith('vditor-'));
+      el.classList.remove(...classesToRemove);
+    });
+    
+    tempDiv.querySelectorAll('pre').forEach(pre => {
+      const codeElement = pre.querySelector('code');
+      if (codeElement) {
+        const codeContent = codeElement.textContent;
+        const languageClass = Array.from(codeElement.classList).find(c => c.startsWith('language-'));
+        pre.innerHTML = '';
+        const newCode = document.createElement('code');
+        if (languageClass) {
+          newCode.className = languageClass;
+        }
+        newCode.textContent = codeContent;
+        pre.appendChild(newCode);
+      }
+    });
+    
+    previewHTML = tempDiv.innerHTML;
+    
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       message('无法打开打印窗口，请允许弹出窗口', { type: 'error' });
@@ -362,10 +391,13 @@ async function exportToPdf() {
             padding: 16px;
             border-radius: 6px;
             overflow-x: auto;
+            margin: 1em 0;
           }
           pre code {
             background-color: transparent;
             padding: 0;
+            display: block;
+            white-space: pre;
           }
           blockquote {
             border-left: 4px solid #dfe2e5;
