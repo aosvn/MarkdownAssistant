@@ -15,13 +15,13 @@ export function initErrorHandling() {
 
   window.addEventListener('error', (event) => {
     console.error('Global error:', event.error)
-    showErrorNotification('messages.error.generic')
+    // showErrorNotification('messages.error.generic') // 暂时禁用，让用户看到真实错误
     logError(event.error)
   })
 
   window.addEventListener('unhandledrejection', (event) => {
     console.error('Unhandled promise rejection:', event.reason)
-    showErrorNotification('messages.error.operationFailed')
+    // showErrorNotification('messages.error.operationFailed') // 暂时禁用，让用户看到真实错误
     logError(event.reason)
   })
 }
