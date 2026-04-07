@@ -7,10 +7,10 @@ let vditor;
 let currentFilePath = null;
 let isModified = false;
 
-function initVditor(mode = 'sv') {
+function initVditor(mode = 'sv', initialContent = '') {
   const container = document.getElementById('vditor');
   
-  let currentContent = '';
+  let currentContent = initialContent;
   if (vditor) {
     try {
       currentContent = vditor.getValue();
@@ -33,7 +33,7 @@ function initVditor(mode = 'sv') {
     theme: 'light',
     icon: 'material',
     cache: {
-      enable: true,
+      enable: false,
     },
     counter: {
       enable: true,
@@ -133,7 +133,8 @@ async function newFile() {
     });
     if (!confirmed) return;
   }
-  vditor.setValue('');
+  const currentMode = document.querySelector('.mode-btn.active')?.dataset.mode || 'sv';
+  initVditor(currentMode, '');
   currentFilePath = null;
   updateCurrentFileName('未命名文件');
   setModified(false);
@@ -141,6 +142,14 @@ async function newFile() {
 
 async function openFile() {
   try {
+    if (isModified) {
+      const confirmed = await confirm('当前文件未保存，是否继续打开新文件？', {
+        title: '确认',
+        type: 'warning',
+      });
+      if (!confirmed) return;
+    }
+    
     const selected = await open({
       multiple: false,
       filters: [
@@ -218,7 +227,15 @@ function updateModeButtons(mode) {
 function switchMode(mode) {
   try {
     console.log('Switching to mode:', mode);
-    initVditor(mode);
+    let currentContent = '';
+    if (vditor) {
+      try {
+        currentContent = vditor.getValue();
+      } catch (e) {
+        console.warn('Error getting content before mode switch:', e);
+      }
+    }
+    initVditor(mode, currentContent);
     console.log('Mode switched successfully');
   } catch (error) {
     console.error('Failed to switch mode:', error);
@@ -226,7 +243,7 @@ function switchMode(mode) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  initVditor('sv');
+  initVditor('sv', '');
 
   document.getElementById('newFile').addEventListener('click', newFile);
   document.getElementById('openFile').addEventListener('click', openFile);
