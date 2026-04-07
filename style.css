@@ -438,3 +438,38 @@ html, body {
 .theme-btn .theme-label {
   font-weight: 500;
 }
+
+.lang-selector {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.lang-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border: 2px solid transparent;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s ease;
+  user-select: none;
+  gap: 4px;
+}
+
+.lang-btn:hover {
+  background-color: var(--border-color);
+}
+
+.lang-btn.active {
+  border-color: var(--accent-color);
+  background-color: rgba(24, 144, 255, 0.1);
+}
+
+.lang-btn .lang-label {
+  font-weight: 500;
+}
