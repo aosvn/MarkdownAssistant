@@ -56,11 +56,20 @@
       "title": "成功",
       "fileSaved": "文件保存成功",
       "fileOpened": "文件打开成功",
-      "pdfExported": "PDF导出成功"
+      "pdfExported": "PDF导出成功",
+      "historyCleared": "已清除全部历史记录"
     },
     "warning": {
       "title": "警告",
-      "unsavedChanges": "您有未保存的更改，确定要关闭吗？"
+      "unsavedChanges": "您有未保存的更改，确定要关闭吗？",
+      "confirmClearHistory": "确定要清除全部历史记录吗？",
+      "confirmExit": "文件尚未保存，确定要退出吗？"
+    },
+    "confirm": {
+      "title": "确认"
+    },
+    "exit": {
+      "title": "确认退出"
     }
   }
 }

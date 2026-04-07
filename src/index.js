@@ -31,7 +31,7 @@ import {
   renderHistoryList
 } from './modules/historyManager.js'
 import { exportToPdf, exportViaBrowser } from './modules/pdfExporter.js'
-import { initI18n, setLocale, t, getAvailableLocales } from './i18n/index.js'
+import { initI18n, setLocale, t, getAvailableLocales, getLocale } from './i18n/index.js'
 
 function updateUIText() {
   document.getElementById('newFile').title = t('toolbar.newFile')
@@ -191,14 +191,14 @@ function setupEventListeners() {
   document.getElementById('closeHistoryModal').addEventListener('click', closeHistoryModal)
 
   document.getElementById('clearAllHistory').addEventListener('click', async () => {
-    const confirmed = await confirm('确定要清除全部历史记录吗？', {
-      title: '确认',
+    const confirmed = await confirm(t('messages.warning.confirmClearHistory'), {
+      title: t('messages.confirm.title'),
       type: 'warning',
     })
     if (confirmed) {
       clearAllHistory()
       renderHistoryList(document.getElementById('historyList'))
-      message('已清除全部历史记录', { type: 'success' })
+      message(t('messages.success.historyCleared'), { type: 'success' })
     }
   })
 
@@ -291,8 +291,8 @@ function setupEventListeners() {
   appWindow.onCloseRequested((event) => {
     if (getIsModified()) {
       event.preventDefault()
-      confirm('文件尚未保存，确定要退出吗？', {
-        title: '确认退出',
+      confirm(t('messages.warning.confirmExit'), {
+        title: t('messages.exit.title'),
         type: 'warning'
       }).then((confirmed) => {
         if (confirmed) {

@@ -56,11 +56,20 @@
       "title": "Success",
       "fileSaved": "File saved successfully",
       "fileOpened": "File opened successfully",
-      "pdfExported": "PDF exported successfully"
+      "pdfExported": "PDF exported successfully",
+      "historyCleared": "All history cleared"
     },
     "warning": {
       "title": "Warning",
-      "unsavedChanges": "You have unsaved changes. Are you sure you want to close?"
+      "unsavedChanges": "You have unsaved changes. Are you sure you want to close?",
+      "confirmClearHistory": "Are you sure you want to clear all history?",
+      "confirmExit": "File not saved. Are you sure you want to exit?"
+    },
+    "confirm": {
+      "title": "Confirm"
+    },
+    "exit": {
+      "title": "Confirm Exit"
     }
   }
 }
