@@ -1,7 +1,7 @@
 import Vditor from 'vditor'
 import { message, confirm } from '@tauri-apps/api/dialog'
 import { appWindow } from '@tauri-apps/api/window'
-import { initErrorHandling } from './utils/errorHandler.js'
+import { initErrorHandling, setErrorHandlerI18n } from './utils/errorHandler.js'
 import { initTheme, setTheme } from './modules/themeManager.js'
 import { 
   initVditor, 
@@ -317,6 +317,7 @@ function setupEventListeners() {
 document.addEventListener('DOMContentLoaded', () => {
   initErrorHandling()
   initI18n()
+  setErrorHandlerI18n(t)
   setCallbacks(updateCurrentFileNameUI, setModifiedUI)
   initTheme()
   updateUIText()

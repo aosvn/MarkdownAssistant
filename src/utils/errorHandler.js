@@ -1,6 +1,11 @@
 import { message } from '@tauri-apps/api/dialog'
 
 let initErrorHandlingCalled = false
+let tFunction = null
+
+export function setErrorHandlerI18n(t) {
+  tFunction = t
+}
 
 export function initErrorHandling() {
   if (initErrorHandlingCalled) {
@@ -10,18 +15,26 @@ export function initErrorHandling() {
 
   window.addEventListener('error', (event) => {
     console.error('Global error:', event.error)
-    showErrorNotification('发生了一个错误，请刷新页面重试')
+    showErrorNotification('messages.error.generic')
     logError(event.error)
   })
 
   window.addEventListener('unhandledrejection', (event) => {
     console.error('Unhandled promise rejection:', event.reason)
-    showErrorNotification('操作失败，请重试')
+    showErrorNotification('messages.error.operationFailed')
     logError(event.reason)
   })
 }
 
-export function showErrorNotification(msg) {
+export function showErrorNotification(msgKey) {
+  let msg = msgKey
+  if (tFunction) {
+    try {
+      msg = tFunction(msgKey)
+    } catch (e) {
+      console.warn('Failed to translate error message:', e)
+    }
+  }
   message(msg, { type: 'error', duration: 5000 })
 }
 
