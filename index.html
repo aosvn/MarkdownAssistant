@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Markdown Assistant</title>
+  <link rel="stylesheet" href="./node_modules/vditor/dist/index.css">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <div class="app-container">
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <button id="newFile" class="btn" title="新建文件">
+          <span class="icon">📄</span>
+        </button>
+        <button id="openFile" class="btn" title="打开文件">
+          <span class="icon">📂</span>
+        </button>
+        <button id="saveFile" class="btn" title="保存文件">
+          <span class="icon">💾</span>
+        </button>
+        <button id="saveAsFile" class="btn" title="另存为">
+          <span class="icon">📝</span>
+        </button>
+      </div>
+      <div class="toolbar-center">
+        <span id="currentFile" class="current-file">未命名文件</span>
+        <span id="modifiedIndicator" class="modified-indicator hidden">*</span>
+      </div>
+      <div class="toolbar-right">
+        <button id="modeWysiwyg" class="btn mode-btn" data-mode="wysiwyg" title="所见即所得模式">WYSIWYG</button>
+        <button id="modeIR" class="btn mode-btn" data-mode="ir" title="即时渲染模式">IR</button>
+        <button id="modeSV" class="btn mode-btn active" data-mode="sv" title="分屏预览模式">SV</button>
+      </div>
+    </div>
+    <div id="vditor" class="editor-container"></div>
+  </div>
+  <script type="module" src="/main.js"></script>
+</body>
+</html>
