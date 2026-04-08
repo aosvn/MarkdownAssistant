@@ -47,7 +47,7 @@
       }
     },
     "bundle": {
-      "active": true,
+      "active": false,
       "targets": "nsis",
       "identifier": "com.markdownassistant.app"
     },
