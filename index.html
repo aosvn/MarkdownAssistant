@@ -126,6 +126,19 @@
   <!-- 遮罩层 -->
   <div id="overlay" class="overlay hidden"></div>
 
+  <script>
+    // 内联调试脚本，在生产环境中也会执行
+    console.log('[HTML] Script tag loaded')
+    console.log('[HTML] document.readyState:', document.readyState)
+    console.log('[HTML] body exists:', !!document.body)
+    console.log('[HTML] vditor element exists:', !!document.getElementById('vditor'))
+    if (document.getElementById('vditor')) {
+      const el = document.getElementById('vditor')
+      console.log('[HTML] vditor element size:', el.offsetWidth, 'x', el.offsetHeight)
+      console.log('[HTML] vditor display:', window.getComputedStyle(el).display)
+      console.log('[HTML] vditor visibility:', window.getComputedStyle(el).visibility)
+    }
+  </script>
   <script type="module" src="/src/index.js"></script>
 </body>
 </html>
