@@ -200,8 +200,12 @@ export function initVditor(mode = 'sv', initialContent = '') {
     const container = document.getElementById('vditor')
     if (!container) {
       console.error('[editor] Container element #vditor not found!')
+      console.error('[editor] document.body.innerHTML:', document.body.innerHTML.substring(0, 500))
       return
     }
+    
+    console.log('[editor] Container element found, offsetWidth:', container.offsetWidth, 'offsetHeight:', container.offsetHeight)
+    console.log('[editor] Container computed style:', window.getComputedStyle(container).display, window.getComputedStyle(container).visibility)
     
     const currentTheme = getCurrentTheme()
     const vditorTheme = currentTheme === 'dark' ? 'dark' : 'light'
