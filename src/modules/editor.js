@@ -237,6 +237,7 @@ export function initVditor(mode = 'sv', initialContent = '') {
         enable: false,
       },
       i18n: vditorI18n['zh-CN'],
+      cdn: '',
       after: () => {
         console.log('[editor] Vditor initialized with mode:', mode)
         updateModeButtons(mode)
