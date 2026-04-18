@@ -1,6 +1,6 @@
 {
   "name": "markdown-assistant",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "A powerful markdown editor built with Tauri and Vditor",
   "type": "module",
   "scripts": {
